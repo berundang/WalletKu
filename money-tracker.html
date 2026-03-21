@@ -8,6 +8,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>WalletKu - Family Finance Tracker</title>
+<link rel="manifest" href="manifest.json">
+<script>
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('installBtn');
+    if(btn) btn.style.display = 'flex';
+  });
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    const btn = document.getElementById('installBtn');
+    if(btn) btn.style.display = 'none';
+  });
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -464,6 +479,7 @@
     <button class="icon-btn" onclick="openModal('summaryModal')" title="Summary">📊</button>
     <button class="icon-btn" onclick="openModal('driveModal')" title="Backup">☁️</button>
     <button class="icon-btn" onclick="exportToExcel()" title="Export Excel">📥</button>
+    <button class="icon-btn" id="installBtn" onclick="installApp()" title="Add to Home Screen" style="display:none">📲</button>
   </div>
 </header>
 
@@ -1048,9 +1064,23 @@ function exportToExcel() {
     ws['!cols'] = [{wch:14},{wch:10},{wch:18},{wch:28},{wch:14}];
     XLSX.utils.book_append_sheet(wb, ws, p.name.slice(0,31));
   });
-  if(wb.SheetNames.length===0) { showToast('⚠️ No data to export'); return; }
-  XLSX.writeFile(wb, `WalletKu_${new Date().toISOString().slice(0,10)}.xlsx`);
-  showToast('📥 Excel file exported!');
+  if(wb.SheetNames.length===0) { showToast('⚠️ No data to export. Please add transactions first.'); return; }
+  const fileName = `WalletKu_${new Date().toISOString().slice(0,10)}.xlsx`;
+  try {
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    showToast('📥 Excel file downloaded!');
+  } catch(e) {
+    XLSX.writeFile(wb, fileName);
+    showToast('📥 Excel file exported!');
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -1239,6 +1269,18 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 function showView(v, el) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+//  INSTALL / ADD TO HOME SCREEN
+// ═══════════════════════════════════════════════════
+function installApp() {
+  if(deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{ deferredPrompt = null; });
+  } else {
+    alert('📲 To add WalletKu to your Home Screen:\n\nIn Chrome, tap the 3 dots menu ⋮\nthen tap "Add to Home screen"\n\nIf you do not see that option, try:\nMenu ⋮ → More tools → Add to Home screen');
+  }
 }
 
 // ═══════════════════════════════════════════════════

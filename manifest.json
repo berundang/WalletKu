@@ -1,0 +1,23 @@
+{
+  "name": "WalletKu - Family Finance Tracker",
+  "short_name": "WalletKu",
+  "description": "Track your family income and expenses",
+  "start_url": "/WalletKu/money-tracker.html",
+  "scope": "/WalletKu/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0f4c75",
+  "background_color": "#0a0f1e",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/berundang/WalletKu/main/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/berundang/WalletKu/main/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
