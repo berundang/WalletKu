@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f4c75">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>WalletKu - Family Finance Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --surface3: #243049;
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --green: #34d399;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --border: #1e2d45;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --font: 'Plus Jakarta Sans', sans-serif;
+    --mono: 'Space Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image: radial-gradient(ellipse at 20% 0%, rgba(56,189,248,0.07) 0%, transparent 50%),
+                      radial-gradient(ellipse at 80% 100%, rgba(129,140,248,0.07) 0%, transparent 50%);
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,15,30,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .app-logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .app-title { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .app-title span { color: var(--accent); }
+  .header-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .icon-btn:hover { background: var(--surface3); color: var(--text); }
+
+  /* ── PROFILE SELECTOR ── */
+  .profile-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 10px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .profile-bar::-webkit-scrollbar { display: none; }
+  .profile-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-radius: 30px;
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer; transition: all 0.2s;
+    white-space: nowrap; font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .profile-chip.active {
+    border-color: var(--accent);
+    background: rgba(56,189,248,0.1);
+    color: var(--accent);
+  }
+  .profile-chip .avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .add-profile-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1.5px dashed var(--text3);
+    background: transparent; color: var(--text3);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .add-profile-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── BALANCE CARD ── */
+  .balance-section { padding: 20px; }
+  .balance-card {
+    background: linear-gradient(135deg, #0f4c75 0%, #1a2f5e 50%, #1e1b4b 100%);
+    border-radius: 20px;
+    padding: 24px;
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(56,189,248,0.2);
+  }
+  .balance-card::before {
+    content: '';
+    position: absolute; top: -40%; right: -20%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .balance-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; }
+  .balance-amount {
+    font-family: var(--mono);
+    font-size: 36px; font-weight: 700;
+    margin: 8px 0 4px;
+    color: #fff;
+  }
+  .balance-amount.negative { color: var(--red); }
+  .balance-name { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+  .balance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .bal-item {
+    background: rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .bal-item-label { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .bal-item-amount { font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .bal-item-amount.income { color: var(--green); }
+  .bal-item-amount.expense { color: var(--red); }
+
+  /* ── QUICK ADD ── */
+  .quick-add { padding: 0 20px 20px; }
+  .quick-add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .quick-btn {
+    padding: 14px; border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font); font-size: 14px; font-weight: 700;
+    color: var(--text);
+  }
+  .quick-btn.income-btn:hover { border-color: var(--green); background: rgba(52,211,153,0.08); color: var(--green); }
+  .quick-btn.expense-btn:hover { border-color: var(--red); background: rgba(248,113,113,0.08); color: var(--red); }
+  .quick-btn .btn-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .income-btn .btn-icon { background: rgba(52,211,153,0.15); }
+  .expense-btn .btn-icon { background: rgba(248,113,113,0.15); }
+
+  /* ── TABS ── */
+  .section-tabs { padding: 0 20px 12px; display: flex; gap: 8px; }
+  .tab-btn {
+    padding: 8px 16px; border-radius: 30px;
+    border: 1.5px solid var(--border);
+    background: transparent; color: var(--text2);
+    font-family: var(--font); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: var(--accent); border-color: var(--accent);
+    color: #000;
+  }
+
+  /* ── TRANSACTIONS ── */
+  .transactions { padding: 0 20px; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .section-title { font-size: 15px; font-weight: 700; }
+  .tx-list { display: flex; flex-direction: column; gap: 8px; }
+  .tx-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+    transition: all 0.2s;
+    animation: slideIn 0.3s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .tx-item:hover { background: var(--surface2); border-color: var(--surface3); }
+  .tx-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .tx-icon.income { background: rgba(52,211,153,0.12); }
+  .tx-icon.expense { background: rgba(248,113,113,0.12); }
+  .tx-info { flex: 1; min-width: 0; }
+  .tx-category { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-note { font-size: 11px; color: var(--text3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tx-date { font-size: 10px; color: var(--text3); }
+  .tx-right { text-align: right; flex-shrink: 0; }
+  .tx-amount { font-family: var(--mono); font-size: 14px; font-weight: 700; }
+  .tx-amount.income { color: var(--green); }
+  .tx-amount.expense { color: var(--red); }
+  .tx-del {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: transparent; border: 1px solid transparent;
+    color: var(--text3); cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .tx-del:hover { background: rgba(248,113,113,0.12); border-color: var(--red); color: var(--red); }
+  .empty-state {
+    text-align: center; padding: 48px 20px;
+    color: var(--text3);
+  }
+  .empty-state .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    width: 100%; max-width: 480px;
+    max-height: 92vh; overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.32,0.72,0,1);
+    border: 1px solid var(--border);
+    border-bottom: none;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-handle {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: var(--surface3); margin: 0 auto 20px;
+  }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; text-align: center; }
+  .modal-type-toggle {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px; margin-bottom: 20px;
+  }
+  .type-opt {
+    padding: 12px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer; text-align: center;
+    font-family: var(--font); font-size: 13px; font-weight: 700;
+    color: var(--text2); transition: all 0.2s;
+  }
+  .type-opt.active.income { border-color: var(--green); background: rgba(52,211,153,0.1); color: var(--green); }
+  .type-opt.active.expense { border-color: var(--red); background: rgba(248,113,113,0.1); color: var(--red); }
+  
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-input {
+    width: 100%; padding: 13px 16px;
+    background: var(--surface2); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: var(--font); font-size: 15px;
+    transition: border-color 0.2s; outline: none;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--text3); }
+  select.form-input { cursor: pointer; }
+  
+  .cat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .cat-opt {
+    padding: 10px 8px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer; text-align: center;
+    font-family: var(--font); font-size: 11px; font-weight: 600;
+    color: var(--text2); transition: all 0.2s;
+  }
+  .cat-opt .cat-emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+  .cat-opt.selected { border-color: var(--accent); background: rgba(56,189,248,0.1); color: var(--accent); }
+  
+  .submit-btn {
+    width: 100%; padding: 16px;
+    border-radius: var(--radius-sm);
+    border: none; font-family: var(--font);
+    font-size: 15px; font-weight: 800;
+    cursor: pointer; transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .submit-btn.income { background: var(--green); color: #000; }
+  .submit-btn.expense { background: var(--red); color: #fff; }
+  .submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .cancel-btn {
+    width: 100%; padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: transparent; color: var(--text2);
+    font-family: var(--font); font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px; transition: all 0.2s;
+  }
+  .cancel-btn:hover { background: var(--surface2); }
+
+  /* ── SUMMARY MODAL ── */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .summary-card {
+    background: var(--surface2); border-radius: var(--radius-sm);
+    padding: 14px; border: 1px solid var(--border);
+  }
+  .summary-card-label { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+  .summary-card-val { font-family: var(--mono); font-size: 16px; font-weight: 700; }
+  .cat-breakdown { margin-top: 16px; }
+  .cat-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row-left { display: flex; align-items: center; gap: 10px; }
+  .cat-bar-wrap { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; margin: 0 12px; }
+  .cat-bar { height: 100%; border-radius: 2px; background: var(--accent); }
+
+  /* ── PROFILE MODAL ── */
+  .avatar-picker { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin-bottom: 16px; }
+  .av-opt {
+    aspect-ratio: 1; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.2s;
+  }
+  .av-opt.selected { border-color: var(--accent); transform: scale(1.1); }
+
+  /* ── GDRIVE MODAL ── */
+  .gdrive-status {
+    background: var(--surface2); border-radius: var(--radius-sm);
+    padding: 16px; margin-bottom: 16px;
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+  .gdrive-status .status-icon { font-size: 36px; margin-bottom: 8px; }
+  .gdrive-status p { font-size: 13px; color: var(--text2); }
+  .gdrive-btn {
+    width: 100%; padding: 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    font-family: var(--font); font-size: 14px; font-weight: 700;
+    cursor: pointer; margin-bottom: 10px; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .gdrive-btn:hover { background: var(--surface3); border-color: var(--accent); }
+  .gdrive-btn.primary { background: #4285f4; border-color: #4285f4; color: #fff; }
+  .gdrive-btn.primary:hover { background: #3574e2; }
+  .gdrive-btn.danger { border-color: var(--red); color: var(--red); }
+  .gdrive-btn.danger:hover { background: rgba(248,113,113,0.1); }
+  .info-box {
+    background: rgba(56,189,248,0.08);
+    border: 1px solid rgba(56,189,248,0.2);
+    border-radius: var(--radius-sm);
+    padding: 12px; font-size: 12px; color: var(--text2);
+    margin-bottom: 12px; line-height: 1.6;
+  }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+    background: rgba(17,24,39,0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; padding: 10px 20px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 4px;
+    padding: 8px; border-radius: 12px;
+    cursor: pointer; transition: all 0.2s;
+    border: none; background: transparent; color: var(--text3);
+    font-family: var(--font);
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item .nav-label { font-size: 10px; font-weight: 600; }
+
+  /* ── MISC ── */
+  .spacer { height: 90px; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 700; margin-left: 6px;
+  }
+  .badge.income { background: rgba(52,211,153,0.15); color: var(--green); }
+  .badge.expense { background: rgba(248,113,113,0.15); color: var(--red); }
+
+  /* ── MANAGE CATS ── */
+  .cat-manage-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .cat-manage-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border-radius: var(--radius-sm);
+    padding: 10px 14px; border: 1px solid var(--border);
+  }
+  .cat-manage-item span { flex: 1; font-size: 13px; font-weight: 600; }
+  .cat-manage-item button {
+    background: none; border: none; color: var(--red);
+    cursor: pointer; font-size: 16px; padding: 4px;
+  }
+
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface3); border: 1px solid var(--border);
+    border-radius: 30px; padding: 10px 20px;
+    font-size: 13px; font-weight: 600;
+    opacity: 0; transition: all 0.3s; z-index: 9999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    padding: 0 20px 12px;
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    padding: 5px 12px; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface2);
+    color: var(--text2); font-size: 12px; font-weight: 600;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.2s;
+  }
+  .filter-chip.active { border-color: var(--accent2); background: rgba(129,140,248,0.12); color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="app-logo">
+    <div class="logo-icon">💰</div>
+    <div class="app-title">Wallet<span>Ku</span></div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="openModal('summaryModal')" title="Summary">📊</button>
+    <button class="icon-btn" onclick="openModal('driveModal')" title="Backup">☁️</button>
+    <button class="icon-btn" onclick="exportToExcel()" title="Export Excel">📥</button>
+  </div>
+</header>
+
+<!-- PROFILE BAR -->
+<div class="profile-bar" id="profileBar"></div>
+
+<!-- BALANCE CARD -->
+<div class="balance-section">
+  <div class="balance-card">
+    <div class="balance-label">Current Balance</div>
+    <div class="balance-amount" id="balanceAmount">RM 0.00</div>
+    <div class="balance-name" id="balanceName">Select a profile</div>
+    <div class="balance-grid">
+      <div class="bal-item">
+        <div class="bal-item-label">⬆️ Total Income</div>
+        <div class="bal-item-amount income" id="totalIncome">RM 0.00</div>
+      </div>
+      <div class="bal-item">
+        <div class="bal-item-label">⬇️ Total Expenses</div>
+        <div class="bal-item-amount expense" id="totalExpense">RM 0.00</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK ADD -->
+<div class="quick-add">
+  <div class="quick-add-grid">
+    <button class="quick-btn income-btn" onclick="openTxModal('income')">
+      <div class="btn-icon">➕</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;">Add Income</div>
+        <div style="font-size:11px;color:var(--text3);font-weight:400;">Source / Allowance</div>
+      </div>
+    </button>
+    <button class="quick-btn expense-btn" onclick="openTxModal('expense')">
+      <div class="btn-icon">➖</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;">Add Expense</div>
+        <div style="font-size:11px;color:var(--text3);font-weight:400;">Food / Transport…</div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar" id="filterBar">
+  <button class="filter-chip active" data-filter="all" onclick="setFilter('all',this)">All</button>
+  <button class="filter-chip" data-filter="income" onclick="setFilter('income',this)">Income</button>
+  <button class="filter-chip" data-filter="expense" onclick="setFilter('expense',this)">Expenses</button>
+</div>
+
+<!-- TRANSACTIONS -->
+<div class="transactions">
+  <div class="section-header">
+    <div class="section-title">Transactions</div>
+    <div style="font-size:12px;color:var(--text3)" id="txCount">0 records</div>
+  </div>
+  <div class="tx-list" id="txList"></div>
+</div>
+<div class="spacer"></div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="showView('home',this)">
+    <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+  </button>
+  <button class="nav-item" onclick="openModal('summaryModal')">
+    <span class="nav-icon">📊</span><span class="nav-label">Summary</span>
+  </button>
+  <button class="nav-item" onclick="openModal('catsModal')">
+    <span class="nav-icon">🏷️</span><span class="nav-label">Categories</span>
+  </button>
+  <button class="nav-item" onclick="openModal('driveModal')">
+    <span class="nav-icon">☁️</span><span class="nav-label">Backup</span>
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- TRANSACTION MODAL -->
+<div class="modal-overlay" id="txModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="txModalTitle">Add Transaction</div>
+
+    <div class="modal-type-toggle">
+      <button class="type-opt active income" id="typeIncome" onclick="setType('income')">⬆️ Income</button>
+      <button class="type-opt expense" id="typeExpense" onclick="setType('expense')">⬇️ Expense</button>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Amount (RM)</label>
+      <input type="number" class="form-input" id="txAmount" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <div class="cat-grid" id="catGrid"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Note (optional)</label>
+      <input type="text" class="form-input" id="txNote" placeholder="What is this for?">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="txDate">
+    </div>
+
+    <button class="submit-btn income" id="txSubmitBtn" onclick="submitTransaction()">Add Income</button>
+    <button class="cancel-btn" onclick="closeModal('txModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- ADD PROFILE MODAL -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">New Profile</div>
+    <div class="form-group">
+      <label class="form-label">Name</label>
+      <input type="text" class="form-input" id="profileName" placeholder="e.g. Ahmad, Sarah, Myself…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pick an Avatar</label>
+      <div class="avatar-picker" id="avatarPicker"></div>
+    </div>
+    <button class="submit-btn income" onclick="addProfile()">Create Profile</button>
+    <button class="cancel-btn" onclick="closeModal('profileModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- SUMMARY MODAL -->
+<div class="modal-overlay" id="summaryModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Summary</div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <div class="summary-card-label">Total Income</div>
+        <div class="summary-card-val" style="color:var(--green)" id="sumIncome">RM 0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">Total Expenses</div>
+        <div class="summary-card-val" style="color:var(--red)" id="sumExpense">RM 0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">Net Balance</div>
+        <div class="summary-card-val" id="sumBalance">RM 0.00</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-card-label">Transactions</div>
+        <div class="summary-card-val" id="sumCount">0</div>
+      </div>
+    </div>
+    <div class="cat-breakdown" id="catBreakdown"></div>
+    <button class="cancel-btn" onclick="closeModal('summaryModal')" style="margin-top:16px">Close</button>
+  </div>
+</div>
+
+<!-- CATEGORIES MODAL -->
+<div class="modal-overlay" id="catsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Manage Categories</div>
+    <div style="margin-bottom:12px;">
+      <div class="form-label" style="margin-bottom:8px;display:block">TYPE</div>
+      <div class="modal-type-toggle" style="margin-bottom:16px">
+        <button class="type-opt active income" id="catTypeIncome" onclick="setCatType('income')">⬆️ Income</button>
+        <button class="type-opt expense" id="catTypeExpense" onclick="setCatType('expense')">⬇️ Expense</button>
+      </div>
+      <div class="cat-manage-list" id="catManageList"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="form-input" id="newCatEmoji" placeholder="😀" style="width:70px;text-align:center;flex-shrink:0">
+        <input type="text" class="form-input" id="newCatName" placeholder="Category name">
+        <button class="submit-btn income" style="width:auto;padding:0 16px;margin:0" onclick="addCategory()">Add</button>
+      </div>
+    </div>
+    <button class="cancel-btn" onclick="closeModal('catsModal')">Done</button>
+  </div>
+</div>
+
+<!-- GOOGLE DRIVE MODAL -->
+<div class="modal-overlay" id="driveModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">☁️ Google Drive Backup</div>
+    <div class="gdrive-status" id="driveStatus">
+      <div class="status-icon">🔒</div>
+      <p id="driveStatusText">Not connected to Google Drive</p>
+    </div>
+    <div class="info-box">
+      ℹ️ Your data is automatically saved on this device. Google Drive backup lets you restore data on a new phone. Sign in with your Google account to enable cloud sync.
+    </div>
+    <button class="gdrive-btn primary" id="driveSignInBtn" onclick="gDriveSignIn()">
+      <span>🔑</span> Sign in with Google
+    </button>
+    <button class="gdrive-btn" id="driveBackupBtn" onclick="backupToDrive()" style="display:none">
+      <span>⬆️</span> Backup Now to Drive
+    </button>
+    <button class="gdrive-btn" id="driveRestoreBtn" onclick="restoreFromDrive()" style="display:none">
+      <span>⬇️</span> Restore from Drive
+    </button>
+    <button class="gdrive-btn danger" id="driveSignOutBtn" onclick="gDriveSignOut()" style="display:none">
+      <span>🚪</span> Sign Out
+    </button>
+    <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:center" id="driveLastSync"></div>
+    <button class="cancel-btn" onclick="closeModal('driveModal')" style="margin-top:12px">Close</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DATA LAYER — localStorage persisted
+// ═══════════════════════════════════════════════════
+const STORE_KEY = 'walletku_v2';
+
+const DEFAULT_CATS = {
+  income: [
+    { id:'salary',  emoji:'💼', name:'Salary' },
+    { id:'allowance', emoji:'💵', name:'Allowance' },
+    { id:'bonus',   emoji:'🎁', name:'Bonus' },
+    { id:'freelance', emoji:'💻', name:'Freelance' },
+    { id:'other_in', emoji:'💰', name:'Other' }
+  ],
+  expense: [
+    { id:'food',    emoji:'🍜', name:'Food & Drinks' },
+    { id:'transport', emoji:'🚌', name:'Transport' },
+    { id:'entertainment', emoji:'🎮', name:'Entertainment' },
+    { id:'medical', emoji:'💊', name:'Medical' },
+    { id:'shopping', emoji:'🛍️', name:'Shopping' },
+    { id:'other_ex', emoji:'📦', name:'Other' }
+  ]
+};
+
+const AVATARS = ['👦','👧','👨','👩','👴','👵','🧒','🧑','🧔','👶','🐱','🐶','⭐','🌟','💎','🎯'];
+const COLORS  = ['#38bdf8','#34d399','#f87171','#fbbf24','#a78bfa','#fb7185','#2dd4bf','#fb923c'];
+
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || initData(); }
+  catch { return initData(); }
+}
+function initData() {
+  return {
+    profiles: [{id:'p1', name:'My Account', avatar:'👤', color:'#38bdf8'}],
+    activeProfile: 'p1',
+    transactions: {},   // { profileId: [{...}] }
+    categories: JSON.parse(JSON.stringify(DEFAULT_CATS)),
+    driveConnected: false,
+    driveEmail: '',
+    lastSync: null
+  };
+}
+function saveData() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+}
+
+let state = loadData();
+if (!state.categories) state.categories = JSON.parse(JSON.stringify(DEFAULT_CATS));
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let currentFilter = 'all';
+let txType = 'income';
+let selectedCat = null;
+let catManageType = 'income';
+let selectedAvatar = AVATARS[0];
+
+// ═══════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════
+function fmt(n) { return 'RM ' + parseFloat(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function getTx() { return state.transactions[state.activeProfile] || []; }
+function getProfile() { return state.profiles.find(p=>p.id===state.activeProfile) || state.profiles[0]; }
+
+function showToast(msg, duration=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), duration);
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════
+function render() {
+  renderProfiles();
+  renderBalance();
+  renderTransactions();
+}
+
+function renderProfiles() {
+  const bar = document.getElementById('profileBar');
+  bar.innerHTML = '';
+  state.profiles.forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'profile-chip' + (p.id===state.activeProfile?' active':'');
+    chip.innerHTML = `<div class="avatar" style="background:${p.color}22;color:${p.color}">${p.avatar}</div> ${p.name}`;
+    chip.onclick = () => { state.activeProfile = p.id; saveData(); render(); };
+    bar.appendChild(chip);
+  });
+  // Delete btn for non-default profiles
+  if(state.activeProfile !== 'p1') {
+    const delBtn = document.createElement('button');
+    delBtn.innerHTML = '🗑️';
+    delBtn.className = 'icon-btn';
+    delBtn.title = 'Delete Profile';
+    delBtn.onclick = deleteCurrentProfile;
+    bar.appendChild(delBtn);
+  }
+  const addBtn = document.createElement('button');
+  addBtn.className = 'add-profile-btn';
+  addBtn.innerHTML = '+';
+  addBtn.title = 'Add Profile';
+  addBtn.onclick = () => openModal('profileModal');
+  bar.appendChild(addBtn);
+}
+
+function renderBalance() {
+  const txs = getTx();
+  const income  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount, 0);
+  const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount, 0);
+  const balance = income - expense;
+  const p = getProfile();
+  const balEl = document.getElementById('balanceAmount');
+  balEl.textContent = fmt(balance);
+  balEl.className = 'balance-amount' + (balance<0?' negative':'');
+  document.getElementById('balanceName').textContent = p.name + "'s Wallet";
+  document.getElementById('totalIncome').textContent  = fmt(income);
+  document.getElementById('totalExpense').textContent = fmt(expense);
+}
+
+function renderTransactions() {
+  let txs = getTx().slice().reverse();
+  if(currentFilter!=='all') txs = txs.filter(t=>t.type===currentFilter);
+  const list = document.getElementById('txList');
+  document.getElementById('txCount').textContent = txs.length + ' records';
+  if(!txs.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>No transactions yet.<br>Tap + to add one.</p></div>`;
+    return;
+  }
+  list.innerHTML = txs.map(tx => {
+    const cat = findCat(tx.type, tx.category);
+    return `<div class="tx-item">
+      <div class="tx-icon ${tx.type}">${cat?cat.emoji:'💳'}</div>
+      <div class="tx-info">
+        <div class="tx-category">${cat?cat.name:tx.category} <span class="badge ${tx.type}">${tx.type}</span></div>
+        <div class="tx-note">${tx.note||'No note'}</div>
+        <div class="tx-date">${formatDate(tx.date)}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amount ${tx.type}">${tx.type==='income'?'+':'-'} ${fmt(tx.amount)}</div>
+      </div>
+      <button class="tx-del" onclick="deleteTx('${tx.id}')" title="Delete">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function findCat(type, id) {
+  return (state.categories[type]||[]).find(c=>c.id===id);
+}
+
+function formatDate(d) {
+  if(!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-MY',{day:'2-digit',month:'short',year:'numeric'});
+}
+
+// ═══════════════════════════════════════════════════
+//  TRANSACTIONS
+// ═══════════════════════════════════════════════════
+function openTxModal(type) {
+  txType = type;
+  selectedCat = null;
+  document.getElementById('txAmount').value = '';
+  document.getElementById('txNote').value = '';
+  document.getElementById('txDate').value = new Date().toISOString().slice(0,10);
+  setType(type);
+  renderCatGrid(type);
+  openModal('txModal');
+  setTimeout(()=>document.getElementById('txAmount').focus(), 400);
+}
+
+function setType(type) {
+  txType = type;
+  document.getElementById('typeIncome').className  = 'type-opt' + (type==='income'?' active income':'');
+  document.getElementById('typeExpense').className = 'type-opt' + (type==='expense'?' active expense':'');
+  const btn = document.getElementById('txSubmitBtn');
+  btn.className = 'submit-btn ' + type;
+  btn.textContent = type==='income' ? 'Add Income' : 'Add Expense';
+  selectedCat = null;
+  renderCatGrid(type);
+}
+
+function renderCatGrid(type) {
+  const cats = state.categories[type] || [];
+  const grid = document.getElementById('catGrid');
+  grid.innerHTML = cats.map(c => `
+    <div class="cat-opt ${selectedCat===c.id?'selected':''}" onclick="selectCat('${c.id}',this)">
+      <span class="cat-emoji">${c.emoji}</span>${c.name}
+    </div>`).join('');
+}
+
+function selectCat(id, el) {
+  selectedCat = id;
+  document.querySelectorAll('#catGrid .cat-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function submitTransaction() {
+  const amount = parseFloat(document.getElementById('txAmount').value);
+  if(!amount || amount<=0) { showToast('⚠️ Please enter a valid amount'); return; }
+  if(!selectedCat) { showToast('⚠️ Please select a category'); return; }
+  const note = document.getElementById('txNote').value.trim();
+  const date = document.getElementById('txDate').value || new Date().toISOString().slice(0,10);
+  if(!state.transactions[state.activeProfile]) state.transactions[state.activeProfile] = [];
+  state.transactions[state.activeProfile].push({ id:uid(), type:txType, amount, category:selectedCat, note, date });
+  saveData();
+  closeModal('txModal');
+  render();
+  showToast(txType==='income'?'✅ Income added!':'✅ Expense added!');
+}
+
+function deleteTx(id) {
+  if(!confirm('Delete this transaction?')) return;
+  state.transactions[state.activeProfile] = getTx().filter(t=>t.id!==id);
+  saveData(); render();
+  showToast('🗑️ Deleted');
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  renderTransactions();
+}
+
+// ═══════════════════════════════════════════════════
+//  PROFILES
+// ═══════════════════════════════════════════════════
+function renderAvatarPicker() {
+  const picker = document.getElementById('avatarPicker');
+  picker.innerHTML = AVATARS.map((av,i)=>
+    `<div class="av-opt ${selectedAvatar===av?'selected':''}"
+      style="background:${COLORS[i%COLORS.length]}22"
+      onclick="pickAvatar('${av}',this)">${av}</div>`
+  ).join('');
+}
+
+function pickAvatar(av, el) {
+  selectedAvatar = av;
+  document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function addProfile() {
+  const name = document.getElementById('profileName').value.trim();
+  if(!name) { showToast('⚠️ Enter a name'); return; }
+  const color = COLORS[state.profiles.length % COLORS.length];
+  state.profiles.push({ id:uid(), name, avatar:selectedAvatar, color });
+  state.activeProfile = state.profiles[state.profiles.length-1].id;
+  saveData();
+  closeModal('profileModal');
+  render();
+  showToast('👤 Profile created!');
+}
+
+function deleteCurrentProfile() {
+  if(state.activeProfile==='p1') { showToast('Cannot delete main account'); return; }
+  if(!confirm('Delete this profile and all its transactions?')) return;
+  state.profiles = state.profiles.filter(p=>p.id!==state.activeProfile);
+  delete state.transactions[state.activeProfile];
+  state.activeProfile = 'p1';
+  saveData(); render();
+  showToast('🗑️ Profile deleted');
+}
+
+// ═══════════════════════════════════════════════════
+//  CATEGORIES
+// ═══════════════════════════════════════════════════
+function setCatType(t) {
+  catManageType = t;
+  document.getElementById('catTypeIncome').className  = 'type-opt' + (t==='income'?' active income':'');
+  document.getElementById('catTypeExpense').className = 'type-opt' + (t==='expense'?' active expense':'');
+  renderCatManageList();
+}
+
+function renderCatManageList() {
+  const cats = state.categories[catManageType] || [];
+  document.getElementById('catManageList').innerHTML = cats.map(c=>
+    `<div class="cat-manage-item">
+      <span>${c.emoji}</span>
+      <span>${c.name}</span>
+      <button onclick="deleteCategory('${c.id}')" title="Delete">🗑️</button>
+    </div>`
+  ).join('');
+}
+
+function addCategory() {
+  const emoji = document.getElementById('newCatEmoji').value.trim() || '📌';
+  const name  = document.getElementById('newCatName').value.trim();
+  if(!name) { showToast('⚠️ Enter category name'); return; }
+  if(!state.categories[catManageType]) state.categories[catManageType]=[];
+  state.categories[catManageType].push({ id:uid(), emoji, name });
+  document.getElementById('newCatEmoji').value='';
+  document.getElementById('newCatName').value='';
+  saveData();
+  renderCatManageList();
+  showToast('✅ Category added');
+}
+
+function deleteCategory(id) {
+  state.categories[catManageType] = (state.categories[catManageType]||[]).filter(c=>c.id!==id);
+  saveData();
+  renderCatManageList();
+  showToast('🗑️ Category removed');
+}
+
+// ═══════════════════════════════════════════════════
+//  SUMMARY
+// ═══════════════════════════════════════════════════
+function renderSummary() {
+  const txs = getTx();
+  const income  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+  const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+  const balance = income - expense;
+  document.getElementById('sumIncome').textContent  = fmt(income);
+  document.getElementById('sumExpense').textContent = fmt(expense);
+  const balEl = document.getElementById('sumBalance');
+  balEl.textContent = fmt(balance);
+  balEl.style.color = balance>=0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('sumCount').textContent = txs.length;
+
+  // Category breakdown
+  const expByCat = {};
+  txs.filter(t=>t.type==='expense').forEach(t=>{
+    expByCat[t.category] = (expByCat[t.category]||0)+t.amount;
+  });
+  const maxVal = Math.max(...Object.values(expByCat),1);
+  const bd = document.getElementById('catBreakdown');
+  if(Object.keys(expByCat).length===0) { bd.innerHTML='<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">No expense data</p>'; return; }
+  bd.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Expense by Category</div>' +
+    Object.entries(expByCat).sort((a,b)=>b[1]-a[1]).map(([catId, amt])=>{
+      const cat = findCat('expense', catId);
+      const pct = Math.round(amt/maxVal*100);
+      return `<div class="cat-row">
+        <div class="cat-row-left"><span>${cat?cat.emoji:'📦'}</span><span>${cat?cat.name:catId}</span></div>
+        <div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--red)">${fmt(amt)}</span>
+      </div>`;
+    }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+//  EXPORT TO EXCEL
+// ═══════════════════════════════════════════════════
+function exportToExcel() {
+  const wb = XLSX.utils.book_new();
+  state.profiles.forEach(p => {
+    const txs = state.transactions[p.id] || [];
+    if(!txs.length) return;
+    const income  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+t.amount,0);
+    const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+t.amount,0);
+    const rows = [
+      ['Date','Type','Category','Note','Amount (RM)'],
+      ...txs.map(t=>{
+        const cat = findCat(t.type, t.category);
+        return [t.date, t.type.toUpperCase(), cat?cat.name:t.category, t.note||'', t.type==='income'?t.amount:-t.amount];
+      }),
+      [],
+      ['','','','Total Income:', income],
+      ['','','','Total Expenses:', -expense],
+      ['','','','NET BALANCE:', income-expense]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:14},{wch:10},{wch:18},{wch:28},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws, p.name.slice(0,31));
+  });
+  if(wb.SheetNames.length===0) { showToast('⚠️ No data to export. Please add transactions first.'); return; }
+  const fileName = `WalletKu_${new Date().toISOString().slice(0,10)}.xlsx`;
+  try {
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); document.body.removeChild(a); }, 1000);
+    showToast('📥 Excel file downloaded!');
+  } catch(e) {
+    XLSX.writeFile(wb, fileName);
+    showToast('📥 Excel file exported!');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  GOOGLE DRIVE (via Google Identity + Drive API)
+// ═══════════════════════════════════════════════════
+// NOTE: Full Google Drive OAuth requires a registered Google Cloud project
+// with OAuth2 client ID. These stubs show the integration pattern.
+// To enable: 1) Create project at console.cloud.google.com
+//             2) Enable Drive API, create OAuth2 web client
+//             3) Replace CLIENT_ID below with your own
+
+const GDRIVE_CLIENT_ID = '290180187346-q796j1cc546epqm9dqum5hs4ut2shrli.apps.googleusercontent.com';
+const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILE_NAME = 'walletku_backup.json';
+let gTokenClient = null;
+let gAccessToken = null;
+let gisLoaded = false;
+
+// Load Google Identity Services script dynamically
+function loadGoogleSDK() {
+  if(document.getElementById('gis-script')) return;
+  const s = document.createElement('script');
+  s.id = 'gis-script';
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.onload = () => {
+    gisLoaded = true;
+    gTokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GDRIVE_CLIENT_ID,
+      scope: GDRIVE_SCOPES,
+      callback: onGoogleSignIn
+    });
+  };
+  document.head.appendChild(s);
+}
+
+async function onGoogleSignIn(tokenResponse) {
+  if(tokenResponse.error) { showToast('❌ Sign-in failed: ' + tokenResponse.error); return; }
+  gAccessToken = tokenResponse.access_token;
+  // Get user email via tokeninfo
+  try {
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=' + gAccessToken);
+    const info = await r.json();
+    state.driveConnected = true;
+    state.driveEmail = info.email || 'Google Account';
+    saveData();
+    updateDriveUI();
+    showToast('✅ Connected to Google Drive!');
+  } catch(e) {
+    state.driveConnected = true;
+    state.driveEmail = 'Google Account';
+    saveData();
+    updateDriveUI();
+    showToast('✅ Connected to Google Drive!');
+  }
+}
+
+function updateDriveUI() {
+  const connected = state.driveConnected && gAccessToken;
+  document.getElementById('driveSignInBtn').style.display = connected?'none':'flex';
+  document.getElementById('driveBackupBtn').style.display = connected?'flex':'none';
+  document.getElementById('driveRestoreBtn').style.display = connected?'flex':'none';
+  document.getElementById('driveSignOutBtn').style.display = connected?'flex':'none';
+  const statusDiv = document.getElementById('driveStatus');
+  if(connected) {
+    statusDiv.innerHTML = `<div class="status-icon">✅</div><p>Connected as <strong>${state.driveEmail||'Google Account'}</strong></p>`;
+  } else {
+    statusDiv.innerHTML = `<div class="status-icon">🔒</div><p>Not connected to Google Drive</p>`;
+  }
+  const lastSync = document.getElementById('driveLastSync');
+  lastSync.textContent = state.lastSync ? 'Last backup: ' + new Date(state.lastSync).toLocaleString('en-MY') : '';
+}
+
+function gDriveSignIn() {
+  if(!gisLoaded) {
+    loadGoogleSDK();
+    setTimeout(()=>{
+      if(gTokenClient) gTokenClient.requestAccessToken();
+      else showToast('⚠️ Loading Google SDK, please try again in a moment…');
+    }, 1500);
+    return;
+  }
+  if(gTokenClient) gTokenClient.requestAccessToken();
+  else showToast('⚠️ Google SDK not ready, please try again');
+}
+
+async function backupToDrive() {
+  if(!gAccessToken) { showToast('⚠️ Please sign in to Google Drive first'); return; }
+  showToast('⬆️ Backing up…');
+  try {
+    const data = JSON.stringify(state);
+    // Check if backup file already exists
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILE_NAME}'`,
+      { headers: { Authorization: 'Bearer ' + gAccessToken } }
+    );
+    const searchData = await searchRes.json();
+    const existingFile = searchData.files && searchData.files[0];
+
+    if(existingFile) {
+      // Update existing file
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existingFile.id}?uploadType=media`, {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + gAccessToken, 'Content-Type': 'application/json' },
+        body: data
+      });
+    } else {
+      // Create new file in appDataFolder
+      const meta = JSON.stringify({ name: GDRIVE_FILE_NAME, parents: ['appDataFolder'] });
+      const form = new FormData();
+      form.append('metadata', new Blob([meta], { type: 'application/json' }));
+      form.append('file', new Blob([data], { type: 'application/json' }));
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + gAccessToken },
+        body: form
+      });
+    }
+    state.lastSync = new Date().toISOString();
+    saveData();
+    updateDriveUI();
+    showToast('✅ Backed up to Google Drive!');
+  } catch(e) {
+    showToast('❌ Backup failed: ' + e.message);
+  }
+}
+
+async function restoreFromDrive() {
+  if(!gAccessToken) { showToast('⚠️ Please sign in to Google Drive first'); return; }
+  if(!confirm('Restore from Google Drive? This will replace your current data.')) return;
+  showToast('⬇️ Restoring…');
+  try {
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILE_NAME}'`,
+      { headers: { Authorization: 'Bearer ' + gAccessToken } }
+    );
+    const searchData = await searchRes.json();
+    if(!searchData.files || !searchData.files[0]) { showToast('⚠️ No backup found on Drive'); return; }
+    const fileId = searchData.files[0].id;
+    const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: 'Bearer ' + gAccessToken }
+    });
+    const restored = await fileRes.json();
+    state = restored;
+    gAccessToken = gAccessToken; // keep token
+    saveData();
+    render();
+    updateDriveUI();
+    showToast('✅ Data restored from Google Drive!');
+  } catch(e) {
+    showToast('❌ Restore failed: ' + e.message);
+  }
+}
+
+function gDriveSignOut() {
+  if(gAccessToken) google.accounts.oauth2.revoke(gAccessToken, ()=>{});
+  gAccessToken = null;
+  state.driveConnected = false;
+  state.driveEmail = '';
+  saveData();
+  updateDriveUI();
+  showToast('👋 Signed out from Google Drive');
+}
+
+// Load SDK on page start
+loadGoogleSDK();
+
+// ═══════════════════════════════════════════════════
+//  MODAL MANAGEMENT
+// ═══════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='summaryModal') renderSummary();
+  if(id==='profileModal') { selectedAvatar=AVATARS[0]; renderAvatarPicker(); document.getElementById('profileName').value=''; }
+  if(id==='catsModal') { catManageType='income'; setCatType('income'); }
+  if(id==='driveModal') updateDriveUI();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if(e.target===overlay) overlay.classList.remove('open');
+  });
+});
+
+function showView(v, el) {
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>
